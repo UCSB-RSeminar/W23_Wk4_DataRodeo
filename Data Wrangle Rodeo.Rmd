@@ -11,10 +11,9 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(janitor)
 library(lubridate)
-library(kableExtra)
 library(readxl)
 ```
-#*Welcome to the Data Rodeo!*
+# *Welcome to the Data Rodeo!*
 ## Today we will learn how to wrangle data like true data cowpersons! We will start with a brief intro to the "tidyverse" and why us old-data-hands tend to stay in that universe. Then we will work through two feisty green datasets and whip them into shape!
 
 ![](wrangle.gif)
@@ -27,39 +26,40 @@ library(readxl)
 - ability to limit your dataset to just the rows/columns you want to work with 
 - adding new columns to a dataframe 
  
-#Part 0: What in Tarnation is the Tidyverse?
+# Part 0: What in Tarnation is the Tidyverse?
 
-##In order to understand the *tidyverse*, we need to first understand what is meant by the term *tidy data*. The three principles of tidy data are that: 
-###1. Every *variable* is a column
-###2. Each *observation* is a row
-###3. Each type of *observational unit* is a table
+## In order to understand the **tidyverse**, we need to first understand what is meant by the term **tidy data**. The three principles of tidy data are that: 
+### 1. Every **variable** is a column
+### 2. Each **observation** is a row
+### 3. Each cell contains a **single value**
 
-```{r example tidy data}
+```{r example tidy data, echo=FALSE}
 plot <- rep(seq(1, 3, 1), 3)
 date <- c("jan1", "jan1", "jan1", "jan2", "jan2", "jan2", "jan3", "jan3", "jan3") #has to be an easier way
 count <- sample.int(100, 9) #random integers
 
 longboi <- tibble(plot, date, count)
-kable(longboi)
+knitr::kable(longboi, align = "c")
 ```
 
-##Tidy format is becoming a universal standard for data because it makes even the largest, unruliest dataset easy to manipulate and analyze. The paper that defined and popularized this concept, **Tidy Data** by Hadley Wickham (all hail), is available in this repo for you to peruse at will.
+### Tidy format is becoming a universal standard for data  
+#### because it makes even the largest, unruliest dataset easy to manipulate and analyze. The paper that defined and popularized this concept, *Tidy Data* by Hadley Wickham (all hail), is available in this repo for you to peruse at will.
 
-##There is a suite of r tools and packages designed to work specifically with tidy data, and these are all contained in one mega-package, **tidyverse**. If you have not already done so, please install tidyverse now!
+#### There is a suite of r tools and packages designed to work specifically with tidy data, and these are all contained in one mega-package, *tidyverse*. If you have not already done so, please install tidyverse now!
 
 ```{r eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
 install.packages("tidyverse")
 ```
 
-##I won't harp too long on why tidyverse is amazing here, but if you're interested, the paper introducing the tidyverse to the world is also included in this repo.  
+#### I won't harp too long on why tidyverse is amazing here, but if you're interested, the paper introducing the tidyverse to the world is also included in this repo.  
  
-## With that brief intro, let's get started tidying!! 
+### With that brief intro, let's get started tidying!! 
  
-#Part 1: Lasso Data from Wide to Long
+# Part 1: Lasso Data from Wide to Long
 
-### Many data sheets that make it easy to record information in the field do so in "wide" format, meaning that each row has information about multiple "observations". Remember that tidy principles require only one observation per row, and each row having every piece of information relevant to that observation (variable values). Below are examples of wide format data:
+#### Many data sheets that make it easy to record information in the field do so in "wide" format, meaning that each row has information about multiple "observations". Remember that tidy principles require only one observation per row, and each row having every piece of information relevant to that observation (variable values). Below are examples of wide format data:
 
-##Wide Format Data Examples:
+### Wide Format Data Examples:
 ```{r wide boi, echo=FALSE}
 plot <- seq(1,5,1)
 jan1 <- c(23, 45, 78, 18, 19)
@@ -67,8 +67,9 @@ jan2 <- c(2, 5, 7, 8, 9)
 jan3 <- c(34, 89, 89, 87, 21)
 
 wideboi1 <- tibble(plot, jan1, jan2, jan3)
-knitr::kable(wideboi1)
-
+knitr::kable(wideboi1, align = "c")
+```
+```{r wideboi2, echo=FALSE}
 ID <- c(1, 2, 3)
 species <- c("F. parvipinnis", "Sebastes sp.", "S. pulcher")
 stomach <- c(6, 18, 0)
@@ -76,25 +77,24 @@ intestine <- c(1, 0, 2)
 gills <- c(3, 4, 7)
 
 wideboi2 <- tibble(ID, species, stomach, intestine, gills)
-knitr::kable(wideboi2)
-
+knitr::kable(wideboi2, align = "c")
 ```
 
 
-##And, as a reminder, long format data looks like this:
+#### And, as a reminder, long format data looks like this:
 ```{r long boi, echo=FALSE}
 plot <- rep(seq(1, 3, 1), 3)
 date <- c("jan1", "jan1", "jan1", "jan2", "jan2", "jan2", "jan3", "jan3", "jan3") #has to be an easier way
 count <- sample.int(100, 9) #random integers
 
 longboi <- tibble(plot, date, count)
-kable(longboi)
+knitr::kable(longboi, align = "c")
 ```
-### As a reminder, the reason we like "tidy" or long format data is because most, if not all, of the statistical analyses we do in r require our data to have every observation represented in its own row. 
 
-### Our first task is to transform or "wrangle" our data from wide format to long format. Luckily this can be done in a few simple lines of code, depending on how messy the original dataset is. We are going to start with a dataset on tick survivorship at Tejon Ranch.
-
-#### In this study, ticks were put in mesh cages and buried. Every two weeks (or so) the live ticks in the cages were counted.
+### Our first task is to transform or "wrangle" our data from wide format to long format. 
+#### Luckily this can be done in a few simple lines of code, depending on how messy the original dataset is. We are going to start with a dataset on tick survivorship at Tejon Ranch. 
+ 
+In this study, ticks were put in mesh cages and buried. Every two weeks (or so) the live ticks in the cages were counted. 
 
 ```{r tick data import, echo=TRUE, message=FALSE, warning=FALSE}
 
@@ -106,16 +106,17 @@ tick_wide <- read_csv("Data/tick18.csv") # I like to start by naming the datafra
 tick_wide
 
 ```
-### When we load the data, we can see that there are several observations per row, one observation for each of several dates. Rows represent a single cage over time. 
+#### When we load the data, we can see that there are several observations per row, one observation for each of several dates. Rows represent a single cage over time. 
 
-### To wrangle this data to a longer format, we will use a tidyverse function called "pivot_longer()". Pivot_longer() will let us make new columns for each variable, and put every observation in its own row.
+#### To wrangle this data to a longer format, we will use a tidyverse function called "pivot_longer()". Pivot_longer() will let us make new columns for each variable, and put every observation in its own row.
 
-###*Some other functions we will use and what they do: 
-*%>%* - this is called a 'pipe' and it connects functions that are all relevant to a dataframe without having to call that dataframe multiple times. Think of it like a little magic link. A 'shortcut' to inserting a pipe is **command + shift + m** 
+#### Some other functions we will use and what they do: 
  
-*mutate()* - mutate allows us to add a whole new column to the dataframe. This sounds pretty simple and limited, but its an incredibly powerful function. We will see what it can do throughout this tutorial. 
-
-*filter()* - filter removes **rows** that match certain parameters that we give it, allowing us to filter out data we don't want (aka NAs, zeros, whatever)
+**%>%** - this is called a 'pipe' and it connects functions that are all relevant to a dataframe without having to call that dataframe multiple times. Think of it like a little magic link. A 'shortcut' to inserting a pipe is *command + shift + m* 
+ 
+**mutate()** - mutate allows us to add a whole new column to the dataframe. This sounds pretty simple and limited, but its an incredibly powerful function. We will see what it can do throughout this tutorial. 
+ 
+**filter()** - filter removes *rows* that match certain parameters that we give it, allowing us to filter out data we don't want (aka NAs, zeros, whatever) 
  
 ```{r pivoting longer}
 tick_long <- tick_wide %>% 
@@ -135,38 +136,41 @@ tick_long <- tick_wide %>%
 
 tick_long
 ```
-### Now our data looks pretty squeaky clean! However, this unruly beastie of a dataset is **survival data** which actually requires that every single individual tick is a single observation, and, per tidy principles, has its own row. Luckily, there is A SINGLE LINE OF CODE that allows us to create such a data frame: uncount(). 
+#### Now our data looks pretty squeaky clean! However, this unruly beastie of a dataset is **survival data** which actually requires that every single individual tick is a single observation, and, per tidy principles, has its own row. Luckily, there is A SINGLE LINE OF CODE that allows us to create such a data frame: uncount(). 
 
 ```{r sneaky further tidying}
 
 tick_final <- uncount(tick_long, num_dead, #we will "uncount" to create a number of new rows based on the number in num_dead
                       .remove = FALSE) #remove = FALSE preserves the # dead, so we can check that uncount() did it right
+
+knitr::kable(head(tick_final), align = 'c')
 ```
 
-## Boy howdy! You have now successfully lassooed some pretty funky data! On to Part 2... 
+### Boy howdy! You have now successfully lassooed some pretty funky data! On to Part 2... 
   
 # Part 2: Ride the Bucking Bronco That Is Sensor Data 
-(Sorry Maddie for putting you on blast)
-
-### In this experimental setup, we are taking fish heart rate data with a sensor that takes very messy data and exports it to an Excel sheet. 
-#### We have two boxes (1 and 2) each with two channels (1 and 2 or 5 and 6) so four 'treatments' (box1_ch1, box1_ch2, box2_ch5, and box2_ch6). In each treatment there is a single fish.
-
-#### We also have a separate CSV that has metadata for the fish, boxes, and channels that we will need to incorporate
-
-### Let's read in the two types of dataframes and clean up the metadata a bit... some new functions that we will use are:
-*select()* - love this function. Select lets us tell R which columns (variables) we want to keep. These are almost always variables we will use for analyses. Just helps us pare down our dataframe to just include elements we will use.
+(Sorry Maddie for putting you on blast) 
  
-*rename()* - pretty self explanatory; lets us rename column names 
+#### In this experimental setup, we are taking fish heart rate data with a sensor that takes very messy data and exports it to an Excel sheet. 
+We have two boxes (1 and 2) each with two channels (1 and 2 or 5 and 6) so four 'treatments' (box1_ch1, box1_ch2, box2_ch5, and box2_ch6). In each treatment there is a single fish.
  
-*read_xlsx()*- I recently discovered the readxl package, and its a game changer for those of us who have massive datasets in Excel with multiple sheets and would rather not make a bunch of CSVs just for R. Lets you read in one sheet at a time. Whoever wrote this package gets me. 
+We also have a separate CSV that has metadata for the fish, boxes, and channels that we will need to incorporate
  
-*head()* - allows us to view just the top few rows of a dataframe so we can check out its shape, columns, etc
+#### Let's read in the two types of dataframes and clean up the metadata a bit... some new functions that we will use are: 
  
-```{r import fish data}
+**select()** - love this function. Select lets us tell R which columns (variables) we want to keep. These are almost always variables we will use for analyses. Just helps us pare down our dataframe to just include elements we will use. 
+ 
+**rename()** - pretty self explanatory; lets us rename column names 
+ 
+**read_xlsx()**- I recently discovered the readxl package, and its a game changer for those of us who have massive datasets in Excel with multiple sheets and would rather not make a bunch of CSVs just for R. Lets you read in one sheet at a time. Whoever wrote this package gets me on a deep level. 
+ 
+**head()** - allows us to view just the top few rows of a dataframe so we can check out its shape, columns, etc
+ 
+```{r import fish data, message=FALSE, warning=FALSE}
 
 metadata <- read_csv("Data/fish_metadata.csv") %>% 
   select(period_day, fish_ID, treatment) %>% # we are only interested in these variables/columns
-  rename(fishID = fish_ID) # self explanatory I hope (I can't remember why I wanted an underscore in here but leaving it in because we're LEARNING)
+  rename(fishID = fish_ID) # self explanatory I hope (I can't remember why I wanted to remove the underscore here but leaving it in because we're LEARNING)
 
 fish_unclean <- read_xlsx("Data/fish.xlsx", sheet = "Sheet2") # read_xslx is truly magic, 'sheet =' allows you to pick which sheet you want
 
@@ -174,17 +178,19 @@ head(fish_unclean) # just lookin'
 
 ```
 
-##Looks pretty crazy, but we can handle it!
-### Our target dataframe will have these columns: fish, channel, box, start time, end time, time point, bpm, start temp, end temp
-
-### For each individual fish, we need to know what channel it was in, box, start and end temperature, and its heart rate at each timepoint. This info is in separate data files and scattered around all caddywampus, so we are going to have to do some data-surgery. GRAB YOUR BONESAW.
-
-### We will start by cleaning the fish data, removing all unnecessary columns, bad sensor runs, and NAs.
-###*Some other functions we will use and what they do: 
-
-*clean_names()* - 
+### Looks pretty crazy, but we can handle it! 
  
-*c()* - 
+#### Our target dataframe will have these columns: fish, channel, box, start time, end time, time point, bpm, start temp, end temp 
+ 
+For each individual fish, we need to know what channel it was in, box, start and end temperature, and its heart rate at each timepoint. This info is in separate data files and scattered around all caddywampus, so we are going to have to do some data-surgery. GRAB YOUR BONESAW. 
+ 
+#### We will start by cleaning the fish data, removing all unnecessary columns, bad sensor runs, and NAs. 
+ 
+#### Some other functions we will use and what they do: 
+
+**clean_names()** - R hates spaces, slashes, capital letters, etc. clean_names() is in the *janitor* package and automaticall converts all column headers to "snake case", meaning all lowercase letters with no spaces or weird symbols (replaces these with underscores)
+ 
+**c()** - this sneaky little combo creates a list for r using the elements, separated by commas, that you put within the parenthenses. Very flexible!
  
 ```{r cleaning fish data}
 
@@ -196,9 +202,8 @@ fish <- fish_unclean %>%
 
 ```
 
-
-## Now that the data is cleaner, we need to turn it into a long form (tidy) dataframe. This will include fish heartrates (beats per minute or "bpm") and all associated data that was taken for the whole test across all channels. To achieve this, we actually have to split up the dataframe and smash it back together. Bonesaws at the ready.
-
+#### Now that the data is cleaner, we need to turn it into a long form (tidy) dataframe. This will include fish heartrates (beats per minute or "bpm") and all associated data that was taken for the whole test across all channels. To achieve this, we actually have to split up the dataframe and smash it back together. Bonesaws at the ready. 
+ 
 ```{r make a tidy heartrate dataset}
 fish_hr <- fish %>% 
   select(ch1_bpm, ch2_bpm, ch5_bpm, ch6_bpm, 
@@ -220,8 +225,8 @@ fish_hr <- fish %>%
                values_to = "bpm") # observations will be put in a new col called bpm
 ```
 
-### Now we will making a separate long form dataframe of just the fish names in each channel, along with the data that was measured in each channel per fish trial (aka start and end temps)
-#### Remember than different channels had different treatments (aka different temperature regimes)
+#### Now we will making a separate long form dataframe of just the fish names in each channel, along with the data that was measured in each channel per fish trial (aka start and end temps) 
+Remember than different channels had different treatments (aka different temperature regimes) 
 
 ```{r make a tidy dataframe of just data taken for each channel}
 
@@ -236,7 +241,7 @@ fish_ids  <- fish %>%
 
 ```
 
-## The two separate dataframes that we've made are in the exact same order as right now so we can use a function called cbind() to smash them together relying on order of the rows.
+#### The two separate dataframes that we've made are in the exact same order as right now so we can use a function called cbind() to smash them together relying on order of the rows. 
 
 ```{r data smash}
 fish_full <- cbind(fish_ids, fish_hr) %>%  #only annoying thing about cbind is that it keeps all columns (both channel cols), but this lets us check for correct binding so it's ok
@@ -255,7 +260,7 @@ fish_full$starttemp <- as.numeric(fish_full$starttemp) #sometimes R loses sight 
 fish_full$endtemp <- as.numeric(fish_full$endtemp)
 
 ```
-## Our final act of wrangling involves appending the "metadata" that we pulled in earlier, which has more information about experimental runs and individual fish that we might want. Luckily this data is already in tidy format, so we can just merge it with 'fish_full' using the join() function (specifically left_join()): 
+#### Our final act of wrangling involves appending the "metadata" that we pulled in earlier, which has more information about experimental runs and individual fish that we might want. Luckily this data is already in tidy format, so we can just merge it with 'fish_full' using the join() function (specifically left_join()): 
 ```{r final smash!}
 fish_final <- fish_full %>% 
   select(fishID, bpm, starttemp, endtemp,channel, test_timepoint_start, test_timepoint_end, notes)%>% 
@@ -265,6 +270,7 @@ fish_final <- fish_full %>%
 
 fish_final
 ```
+### Ain't she a beaut.
 
-
+# Congratulations, you are officially a bonified DATA WRANGLER!!
 
