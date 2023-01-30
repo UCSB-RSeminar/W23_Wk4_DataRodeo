@@ -1,0 +1,250 @@
+---
+title: "R Seminar - Tidying and Wrangling Data"
+output: html_document
+date: "2023-01-29"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# packages
+library(tidyverse)
+library(janitor)
+library(lubridate)
+library(kable)
+
+install.packages("kableExtra")
+```
+#*Welcome to the Data Rodeo!*
+## Today we will learn how to wrangle data like true data cowpersons! We will start with a brief intro to the "tidyverse" and why us old-data-hands tend to stay in that universe. Then we will work through two feisty green datasets and whip them into shape!
+
+## The skills you should walk away from today with are: 
+- creating reproducible and shareable results in the tidyverse 
+- working with "pipes" 
+- transforming dataframes into "long" format 
+- pulling datasets apart and putting them back together again 
+- ability to limit your dataset to just the rows/columns you want to work with 
+- adding new columns to a dataframe 
+ 
+#Part 1: Lasso Data from Wide to Long
+
+### Many data sheets that make it easy to record information in the field do so in "wide" format, meaning that each row has information about multiple "observations". Most of the analyses we want to do requires that data be in "long" or "tidy" format, meaning that there is only one observation per row, and each row has every piece of information relevant to that observation. Below are examples of both data shapes:
+
+##Wide Format Data Examples:
+```{r wide boi}
+plot <- seq(1,5,1)
+jan1 <- c(23, 45, 78, 18, 19)
+jan2 <- c(2, 5, 7, 8, 9)
+jan3 <- c(34, 89, 89, 87, 21)
+
+wideboi1 <- tibble(plot, jan1, jan2, jan3)
+knitr::kable(wideboi1)
+
+ID <- c(1, 2, 3)
+species <- c("F. parvipinnis", "Sebastes sp.", "S. pulcher")
+stomach <- c(6, 18, 0)
+intestine <- c(1, 0, 2)
+gills <- c(3, 4, 7)
+
+wideboi2 <- tibble(ID, species, stomach, intestine, gills)
+knitr::kable(wideboi2)
+
+```
+
+
+##Long Format Data
+```{r long boi}
+plot <- rep(seq(1, 5, 1), 3)
+date <- rep(c())
+count <- 
+
+longboi <- tibble()
+```
+
+
+### The goal here is to transform or "wrangle" our data from wide format to long format. Luckily this can be done in a few simple lines of code, depending on how messy the original dataset is. We are going to start with a dataset on tick survivorship at Tejon Ranch.
+
+#### In this study, ticks were put in mesh cages and buried. Every two weeks (or so) the ticks in the cages were counted and classified as dead or alive.
+
+```{r tick data import}
+
+## import our CSV
+### make sure to use the tidyverse version of read_csv (with "_" instead of ".")
+
+tick_wide <- read_csv("tick18.csv") # I like to start by naming the dataframe "_wide" or "_unclean" so that the final dataframe gets a shorter name
+
+tick_wide
+
+```
+### When we load the data, we can see that there are several observations per row, one observation for each of several dates. Rows represent a single cage over time. 
+
+### To wrangle this data to a longer format, we will use a tidyverse function called "pivot_longer()". Pivot_longer() will let us make new columns for each variable, and put every observation in its own row.
+
+###*Some other functions we will use and what they do: 
+%>% - this is called a 'pipe' and it connects functions that are all relevant to a dataframe without having to call that dataframe multiple times. Think of it like a little magic link. A 'shortcut' to inserting a pipe is **command + shift + m** 
+ 
+mutate() - mutate allows us to add a whole new column to the dataframe. This sounds pretty simple and limited, but its an incredibly powerful function. We will see what it can do throughout this tutorial. 
+ 
+```{r pivoting longer}
+tick_long <- tick_wide %>% 
+  pivot_longer(names_to = "date_alive", 
+               values_to = "num_alive", 
+               cols = c("7/28/18" :"10/21/18"))%>% 
+  mutate(num_dead = lag(num_alive, default = first(num_alive))- num_alive)
+
+tick_long
+```
+
+
+```{r maybe add to part 1}
+# add a column of dead ticks by subtracting line from line before
+# lead/ lag
+# lag indicates row after, lead indicates row before
+# mutate adds a column
+#melted2 <- melted %>% 
+#  mutate(num_dead = lag(num_alive, default = first(num_alive))- num_alive)
+
+#remove rows with negative values for num_dead (indicates the day of deployment because it would be the low number before that day minus the 40 ticks deployed)
+
+#melted3 <- melted2 %>% 
+#  filter(num_dead >= 0)
+
+# alternatively, just delete rows for which num_alive = 40
+# but I also want to remove rows where nobody died UNLESS its the last sampling day and then I want to keep it?
+# want to keep everything for which the number dead is greater than zero OR the date is 10/21/18 and the number dead is zero
+#melted3 <- melted2 %>%
+#  filter(num_alive != 40) %>% 
+#  filter(num_dead >0)
+
+
+#melted4 <- melted3%>% 
+#  filter(if (date_alive=="10/21/18") num_dead == 0 else num_dead>0) %>%  
+#  tail(1)
+  
+#now trying to add number of rows per date based on the number in num_dead
+#remove = FALSE preserves the # dead, so I can check that it did it right
+
+#expanded <- uncount(melted3, num_dead, .remove = FALSE)
+
+# export to a CSV so I can add the survivors back in 
+
+#write_csv(expanded, "tick18_complete.csv")
+```
+
+ 
+# Part 2: Ride the Bucking Bronco That Is Sensor Data 
+(Sorry Maddie for putting you on blast)
+
+### In this experimental setup, we are taking fish heart rate data with a sensor that takes very messy data and exports it to an Excel sheet. 
+#### We have two boxes (1 and 2) each with two channels (1 and 2 or 5 and 6) so four 'treatments' (box1_ch1, box1_ch2, box2_ch5, and box2_ch6). In each treatment there is a single fish.
+
+#### We also have a separate CSV that has metadata for the fish, boxes, and channels that we will need to incorporate
+
+### Let's read in the two types of dataframes and clean up the metadata a bit... some new functions that we will use are:
+*select()* - love this function. Select lets us tell R which columns (variables) we want to keep. These are almost always variables we will use for analyses. Just helps us pare down our dataframe to just include elements we will use.
+ 
+*rename()* - pretty self explanatory; lets us rename column names 
+ 
+*read_xlsx()*- I recently discovered the readxl package, and its a game changer for those of us who have massive datasets in Excel with multiple sheets and would rather not make a bunch of CSVs just for R. Lets you read in one sheet at a time. Whoever wrote this package gets me. 
+ 
+*head()* - allows us to view just the top few rows of a dataframe so we can check out its shape, columns, etc
+ 
+```{r import fish data}
+
+metadata <- read_csv("fish_metadata.csv") %>% 
+  select(period_day, fish_ID, treatment) %>% # we are only interested in these variables/columns
+  rename(fishID = fish_ID) # self explanatory I hope (I can't remember why I wanted an underscore in here but leaving it in because we're LEARNING)
+
+fish_unclean <- read_xlsx("fish.xlsx", sheet = "Sheet2") # using this because I'm lazy, it's in the package readxl
+
+head(fish_unclean) # just lookin'
+
+```
+
+#Looks pretty crazy, but we can handle it!
+### Our target dataframe will have these columns: fish, channel, box, start time, end time, time point, bpm, start temp, end temp
+
+### For each individual fish, we need to know what channel it was in, box, start and end temperature, and its heart rate at each timepoint
+
+### We will start by cleaning the data, removing all unnecessary columns, bad sensor runs, and NAs.
+###*Some other functions we will use and what they do: 
+
+*clean_names()* - 
+ 
+*c()* - 
+ 
+```{r cleaning fish data}
+
+fish <- fish_unclean %>% 
+  clean_names() %>% 
+  #rename(notes = 'notes from analysis/test') %>%  # r does NOT like spaces and slashes so this column name has to go
+  select(!c(time, date, cmt_text, filename)) # ! in front of c() means select OUT the following list of columns
+
+#######now we need to melt this dataset like a million times to achieve all of the data we will need in all of the rows#######
+
+```
+
+
+# Now that the data in cleaner, we need to turn it into a long form (tidy) dataframe. This will include fish heartrates (beats per minute or "bpm") and all associated data that was taken for the whole test across all channels.
+
+```{make a tidy heartrate + test measurements dataset}
+fish_hr <- fish %>% 
+  select(ch1_bpm, ch2_bpm, ch5_bpm, ch6_bpm, 
+         sel_start, sel_end, sel_duration, test_timepoint_start, test_timepoint_end, notes) %>%  
+  # only selecting for data that's taken when heart rate is taken (per timepoint) but for the entire test (aka not data taken in each channel like temperature)
+  # we do need channel data so we will add it back in later once we've fixed this part of the dataframe
+  
+  # I want to get rid of the "_bpm" at the end of the channel columns since we won't need it
+  rename_with( 
+    # rename_with() tells r to rename columns using a function:
+    ~str_remove(., "_bpm"), # remove the string "_bpm" from every column in this dataset (that's what the ".," means)
+    ends_with("bpm")) %>%  # ...that ends with bpm
+
+  # now we want to create one row per observation of bpm and create a col called channel so each bpm observation has a matched cell with the channel it was observed in
+  
+  #hopefully the rest of the data will just copy down appropriately
+
+  pivot_longer(1:4, names_to = "channel", # column names for columns 1-4 will be put in a new col called channel
+               values_to = "bpm") # observations will be put in a new col called bpm
+```
+
+### Now i'm making a separate long form df of just the fish names in each channel, along with the data that was measured in each channel per fish trial (aka start and end temps)
+#### Remember than different channels had different treatments (different temperature regimes)
+
+```{r make a tidy dataframe of just data taken for each channel}
+
+fish_ids  <- fish %>% 
+  select(box1_ch1, box1_ch2, box2_ch5, box2_ch6, box1_temp_start, box1_temp_end, box2_temp_start, box2_temp_end) %>%  #only selecting names + temps (temps should copy + fill in appropriately)
+  pivot_longer(1:4, names_to = c("box", "channel_copy"),
+               names_sep = "_", 
+               values_to = "fishID") %>% 
+  mutate(fishID = case_when(fishID == 122 ~ "F122", 
+                            TRUE ~ fishID))
+# these are in the exact same order as bpms right now so we can cbind them (merge() and full_join() will try to use all possible combinations and bc there are vague matching elements we have to avoid this and rely on order)
+
+```
+
+```{r data smash}
+fish_full <- cbind(fish_ids, fish_hr) %>%  #only annoying thing about cbind is that it keeps all columns (both channel cols), but this lets us check for correct binding so it's ok
+  select(!channel_copy) %>% 
+  
+  # we also want to smash the start and end temps into one column based on the box the fish was in
+  # i.e. was fish in box 1? then we want start temp for box 1 in the col starttemp
+  
+  mutate(starttemp = if_else(box == "box1", box1_temp_start, box2_temp_start)) %>% 
+  
+  
+  mutate(endtemp = if_else(box == "box1", box1_temp_end, box2_temp_end)) # i want to find a way to make this work with more than two potential columns (more than two boxes)
+ 
+fish_full$starttemp <- as.numeric(fish_full$starttemp)
+fish_full$endtemp <- as.numeric(fish_full$endtemp)
+
+fish_final <- fish_full %>% 
+  select(fishID, bpm, starttemp, endtemp,channel, test_timepoint_start, test_timepoint_end, notes)%>% 
+  filter(!is.na(starttemp), 
+         fishID != "NA") %>% 
+  left_join(., meta, by="fishID")
+```
+
+
+
