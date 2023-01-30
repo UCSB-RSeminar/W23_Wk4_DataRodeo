@@ -1,10 +1,129 @@
 ---
-title: "Your Notes!"
+title: "R Seminar - Tidying and Wrangling Data - Your Notes!"
 output: html_document
-date: "2023-01-30"
+date: "2023-01-29"
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+# packages
+library(tidyverse)
+library(janitor)
+library(lubridate)
+library(readxl)
 ```
+ 
+# Part 1: Lasso Data from Wide to Long
+
+### Our first task is to transform or "wrangle" our data from wide format to long format. 
+#### Luckily this can be done in a few simple lines of code, depending on how messy the original dataset is. We are going to start with a dataset on tick survivorship at Tejon Ranch. 
+ 
+In this study, ticks were put in mesh cages and buried. Every two weeks (or so) the live ticks in the cages were counted. 
+
+```{r tick data import, echo=TRUE, message=FALSE, warning=FALSE}
+
+## import our CSV
+### make sure to use the tidyverse version of read_csv (with "_" instead of ".")
+
+
+
+```
+#### When we load the data, we can see that there are several observations per row, one observation for each of several dates. Rows represent a single cage over time. 
+
+#### To wrangle this data to a longer format, we will use a tidyverse function called "pivot_longer()". Pivot_longer() will let us make new columns for each variable, and put every observation in its own row.
+
+#### Some other functions we will use and what they do: 
+ 
+**%>%** - this is called a 'pipe' and it connects functions that are all relevant to a dataframe without having to call that dataframe multiple times. Think of it like a little magic link. A 'shortcut' to inserting a pipe is *command + shift + m* 
+ 
+**mutate()** - mutate allows us to add a whole new column to the dataframe. This sounds pretty simple and limited, but its an incredibly powerful function. We will see what it can do throughout this tutorial. 
+ 
+**filter()** - filter removes *rows* that match certain parameters that we give it, allowing us to filter out data we don't want (aka NAs, zeros, whatever) 
+ 
+```{r pivoting longer}
+
+```
+#### Now our data looks pretty squeaky clean! However, this unruly beastie of a dataset is **survival data** which actually requires that every single individual tick is a single observation, and, per tidy principles, has its own row. Luckily, there is A SINGLE LINE OF CODE that allows us to create such a data frame: uncount(). 
+
+```{r sneaky further tidying}
+
+
+```
+
+### Boy howdy! You have now successfully lassooed some pretty funky data! On to Part 2... 
+  
+# Part 2: Ride the Bucking Bronco That Is Sensor Data 
+(Sorry Maddie for putting you on blast) 
+ 
+#### In this experimental setup, we are taking fish heart rate data with a sensor that takes very messy data and exports it to an Excel sheet. 
+We have two boxes (1 and 2) each with two channels (1 and 2 or 5 and 6) so four 'treatments' (box1_ch1, box1_ch2, box2_ch5, and box2_ch6). In each treatment there is a single fish.
+ 
+We also have a separate CSV that has metadata for the fish, boxes, and channels that we will need to incorporate
+ 
+#### Let's read in the two types of dataframes and clean up the metadata a bit... some new functions that we will use are: 
+ 
+**select()** - love this function. Select lets us tell R which columns (variables) we want to keep. These are almost always variables we will use for analyses. Just helps us pare down our dataframe to just include elements we will use. 
+ 
+**rename()** - pretty self explanatory; lets us rename column names 
+ 
+**read_xlsx()**- I recently discovered the readxl package, and its a game changer for those of us who have massive datasets in Excel with multiple sheets and would rather not make a bunch of CSVs just for R. Lets you read in one sheet at a time. Whoever wrote this package gets me on a deep level. 
+ 
+**head()** - allows us to view just the top few rows of a dataframe so we can check out its shape, columns, etc
+ 
+```{r import fish data, message=FALSE, warning=FALSE}
+
+
+
+```
+
+### Looks pretty crazy, but we can handle it! 
+ 
+#### Our target dataframe will have these columns: fish, channel, box, start time, end time, time point, bpm, start temp, end temp 
+ 
+For each individual fish, we need to know what channel it was in, box, start and end temperature, and its heart rate at each timepoint. This info is in separate data files and scattered around all caddywampus, so we are going to have to do some data-surgery. GRAB YOUR BONESAW. 
+ 
+#### We will start by cleaning the fish data, removing all unnecessary columns, bad sensor runs, and NAs. 
+ 
+#### Some other functions we will use and what they do: 
+
+**clean_names()** - R hates spaces, slashes, capital letters, etc. clean_names() is in the *janitor* package and automaticall converts all column headers to "snake case", meaning all lowercase letters with no spaces or weird symbols (replaces these with underscores)
+ 
+**c()** - this sneaky little combo creates a list for r using the elements, separated by commas, that you put within the parenthenses. Very flexible!
+ 
+```{r cleaning fish data}
+
+
+```
+
+#### Now that the data is cleaner, we need to turn it into a long form (tidy) dataframe. This will include fish heartrates (beats per minute or "bpm") and all associated data that was taken for the whole test across all channels. To achieve this, we actually have to split up the dataframe and smash it back together. Bonesaws at the ready. 
+ 
+```{r make a tidy heartrate dataset}
+
+
+```
+
+#### Now we will making a separate long form dataframe of just the fish names in each channel, along with the data that was measured in each channel per fish trial (aka start and end temps) 
+Remember than different channels had different treatments (aka different temperature regimes) 
+
+```{r make a tidy dataframe of just data taken for each channel}
+
+
+
+
+```
+
+#### The two separate dataframes that we've made are in the exact same order as right now so we can use a function called cbind() to smash them together relying on order of the rows. 
+
+```{r data smash}
+
+
+```
+#### Our final act of wrangling involves appending the "metadata" that we pulled in earlier, which has more information about experimental runs and individual fish that we might want. Luckily this data is already in tidy format, so we can just merge it with 'fish_full' using the join() function (specifically left_join()): 
+```{r final smash!}
+
+```
+### Ain't she a beaut.
+
+# Congratulations, you are officially a bonified DATA WRANGLER!!
 
